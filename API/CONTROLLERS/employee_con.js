@@ -88,7 +88,13 @@ exports.update_employee = (id, body) => {
                 }
             })
             .catch(err => {
-                reject({ status: 500, error: err });
+                const e = err.errors;
+                if (e) {
+                    reject({ status: 422, error: e });
+                }
+                else {
+                    reject({ status: 500, error: err });
+                }
             })
     })
 }
