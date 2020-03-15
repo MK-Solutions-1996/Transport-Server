@@ -86,10 +86,9 @@ exports.find_driver_attendence_by_date = (date) => {
             .select('_id date details')
             .exec()
             .then(result => {
-                if (result.length === 0) {
-                    reject({ status: 404, error: 'No data found' });
-                }
+
                 resolve({ status: 200, data: result[0] });
+
             })
             .catch(err => {
                 reject({ status: 500, error: err });
