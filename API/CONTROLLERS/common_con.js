@@ -4,13 +4,14 @@ const bcrypt = require('bcryptjs');
 exports.hash_password = (password) => {
     return new Promise((resolve, reject) => {
         /*
-            *These validations check here because, after hashing the password, cannot check the password length. 
+            * If password is empty it will be passed without bcrypt, then it will be cought on validation process 
          */
         if (password.length === 0) {
-            reject({ status: 422, error: { password: { message: 'password required' } } });
+            resolve(password);
+
         }
         else if (password.length < 8) {
-            reject({ status: 422, error: { password: { message: '8 Characters required' } } });
+            resolve(password);
         }
 
         else {
