@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 var uniqueValidator = require('mongoose-unique-validator');
+const bcrypt = require('bcryptjs');
 
 const userSchema = mongoose.Schema({
     _id: mongoose.Schema.Types.ObjectId,
@@ -30,11 +31,52 @@ const userSchema = mongoose.Schema({
     },
 
     password: {
-        type: String,
-        required: [true, 'Required'],
-        minlength: [8, '8 Characters required']
-    }
+        type: String
+    },
 });
+
+
+
+
+userSchema.methods.confirm_password_operation = function confirm_password_operation(pw, cpw) {
+
+    var validity = true;
+
+    if (pw === "") {
+        this.invalidate('password', { message: 'Required' });
+        validity = false;
+    }
+    else if (pw.length < 8) {
+        this.invalidate('password', { message: '8 characters Required' });
+        validity = false;
+    }
+    if (cpw === "") {
+        this.invalidate('confirmPassword', { message: 'Required' });
+        validity = false;
+
+    }
+    if (validity) {
+        if (pw === cpw) {
+            bcrypt
+                .hash(pw, 10)
+                .then(hash => {
+                    this.password = hash;
+                    return true;
+                })
+                .catch(() => {
+                    this.invalidate('password', { message: 'Encryption error' });
+
+                });
+        }
+        else {
+            this.invalidate('password', { message: 'Password not matched' });
+        }
+    }
+    return false;
+}
+
+
+
 
 userSchema.plugin(uniqueValidator, { message: '{VALUE} is already exists' });
 

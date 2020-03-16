@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 const Admin = require('../MODELS/admin_mod');
+const bcrypt = require('bcryptjs');
 
 
-exports.save_admin = (hash, body) => {
+exports.save_admin = (body) => {
     return new Promise((resolve, reject) => {
         const adminData = new Admin({
             _id: new mongoose.Types.ObjectId(),
@@ -11,16 +12,16 @@ exports.save_admin = (hash, body) => {
             email: body.email,
             type: body.type,
             username: 'admin',
-            password: hash
         });
 
+        adminData.confirm_password_operation(body.password, body.confirmPassword);
         adminData.save()
             .then(() => {
-                resolve({ message: 'success' });
+                resolve({ status: 201, message: 'success' });
             })
             .catch(err => {
                 const e = err.errors;
-                if (e.empNo || e.email || e.type || e.username || e.password) {
+                if (e) {
                     reject({ status: 422, error: e });
                 }
                 else {
@@ -71,20 +72,35 @@ exports.find_admin_by_id = (id) => {
 
 exports.update_admin_password = (id, new_password) => {
     return new Promise((resolve, reject) => {
-        const update_operation = { password: new_password };
-        Admin
-            .updateOne({ _id: id }, { $set: update_operation })
-            .exec()
-            .then((result) => {
-                const updated_count = result.n;
-                if (updated_count === 0) {
-                    reject({ status: 404, error: 'No id found' });
-                }
-                resolve({ status: 201, message: 'sucess' });
-            })
-            .catch(err => {
-                reject({ status: 500, error: err });
-            });
+        if (new_password === "") {
+            reject({ status: 422, error: { newPassword: { message: 'Required' } } });
+        }
+        else if (new_password.length < 8) {
+            reject({ status: 422, error: { newPassword: { message: '8 characters required' } } });
+        }
+        else {
+            bcrypt
+                .hash(new_password, 10)
+                .then(hash => {
+                    const update_operation = { password: hash };
+                    Admin
+                        .updateOne({ _id: id }, { $set: update_operation }, { runValidators: true, context: 'query' })
+                        .exec()
+                        .then((result) => {
+                            const updated_count = result.n;
+                            if (updated_count === 0) {
+                                reject({ status: 404, error: 'No id found' });
+                            }
+                            resolve({ status: 201, message: 'sucess' });
+                        })
+                        .catch(err => {
+                            reject({ status: 500, error: err });
+                        });
+                })
+                .catch(err => {
+                    reject({ status: 422, error: err });
+                })
+        }
     });
 }
 
