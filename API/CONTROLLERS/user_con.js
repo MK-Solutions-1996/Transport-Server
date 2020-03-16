@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 const User = require('../MODELS/user_mod');
+const bcrypt = require('bcryptjs');
 
-exports.save_user = (hash, body) => {
+
+exports.save_user = (body) => {
     return new Promise((resolve, reject) => {
         const userData = new User({
             _id: new mongoose.Types.ObjectId(),
@@ -9,9 +11,9 @@ exports.save_user = (hash, body) => {
             firstName: body.firstName,
             type: body.type,
             email: body.email,
-            password: hash
         });
 
+        userData.confirm_password_operation(body.password, body.confirmPassword);
         userData.save()
             .then(() => {
                 resolve({ status: 201, message: 'success' });
@@ -27,6 +29,8 @@ exports.save_user = (hash, body) => {
             });
     });
 }
+
+
 
 
 exports.find_all_users = () => {
@@ -123,24 +127,44 @@ exports.find_user_by_id = (id) => {
 }
 
 
+
+
+
+
 exports.update_user_password = (id, new_password) => {
     return new Promise((resolve, reject) => {
-        const update_operation = { password: new_password };
-        User
-            .updateOne({ _id: id }, { $set: update_operation })
-            .exec()
-            .then((result) => {
-                const updated_count = result.n;
-                if (updated_count === 0) {
-                    reject({ status: 404, error: 'No id found' });
-                }
-                else {
-                    resolve({ status: 201, message: 'sucess' });
-                }
-            })
-            .catch(err => {
-                reject({ status: 500, error: err });
-            });
+        if (new_password === "") {
+            reject({ status: 422, error: { newPassword: { message: 'Required' } } });
+        }
+        else if (new_password.length < 8) {
+            reject({ status: 422, error: { newPassword: { message: '8 characters required' } } });
+        }
+        else {
+
+            bcrypt
+                .hash(new_password, 10)
+                .then(hash => {
+                    const update_operation = { password: hash };
+                    User
+                        .updateOne({ _id: id }, { $set: update_operation }, { runValidators: true, context: 'query' })
+                        .exec()
+                        .then((result) => {
+                            const updated_count = result.n;
+                            if (updated_count === 0) {
+                                reject({ status: 404, error: 'No id found' });
+                            }
+                            else {
+                                resolve({ status: 201, message: 'sucess' });
+                            }
+                        })
+                        .catch(err => {
+                            reject({ status: 500, error: err.error });
+                        });
+                })
+                .catch((err) => {
+                    reject({ status: 422, error: err });
+                });
+        }
     });
 }
 

@@ -10,20 +10,13 @@ const checkAPI = require('../MIDDLEWARES/checkAPI');
     * Hash the password and save the admin
 */
 router.post('/', checkAPI, (req, res, next) => {
-    commonController
-        .hash_password(req.body.password)
-        .then(hash => {
-            adminController
-                .save_admin(hash, req.body)
-                .then(result => {
-                    res.status(result.status).json({ message: result.message });
-                })
-                .catch(err => {
-                    res.status(err.status).json({ error: err.error });
-                });
+    adminController
+        .save_admin(req.body)
+        .then(result => {
+            res.status(result.status).json({ message: result.message });
         })
         .catch(err => {
-            res.status(err.status).json({ error: err.error }); //  hashing password error
+            res.status(err.status).json({ error: err.error });
         });
 });
 
@@ -61,17 +54,10 @@ router.patch('/password', checkAPI, (req, res, next) => {
             commonController.compare_passwords(current_password, admin.password)
                 .then(result => {
                     if (result) {
-                        commonController
-                            .hash_password(new_password)
-                            .then(hash => {
-                                adminController
-                                    .update_admin_password(id, hash)
-                                    .then(result => {
-                                        res.status(result.status).json({ message: result.message });
-                                    })
-                                    .catch(err => {
-                                        res.status(error.status).json({ error: err.error });
-                                    });
+                        adminController
+                            .update_admin_password(id, new_password)
+                            .then(result => {
+                                res.status(result.status).json({ message: result.message });
                             })
                             .catch(err => {
                                 res.status(err.status).json({ error: err.error });
