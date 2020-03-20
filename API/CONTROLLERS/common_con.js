@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
+
 exports.hash_password = (password) => {
     return new Promise((resolve, reject) => {
         /*
@@ -60,3 +61,6 @@ exports.generate_token = (object) => {
 
     return token;
 }
+
+
+
